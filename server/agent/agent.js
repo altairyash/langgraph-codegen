@@ -4,36 +4,22 @@ import { tool } from "@langchain/core/tools";
 import { MemorySaver } from "@langchain/langgraph";
 import { z } from "zod";
 
-async function evalAndCaptureOutput(code) {
-  const oldLog = console.log;
-  const oldError = console.error;
-
-  const output = [];
-  let errorOutput = [];
-
-  console.log = (...args) => output.push(args.join(" "));
-  console.error = (...args) => errorOutput.push(args.join(" "));
-
-  try {
-    await eval(code);
-    console.log(await eval(code));
-  } catch (error) {
-    errorOutput.push(error.message);
-  }
-
-  console.log = oldLog;
-  console.error = oldError;
-
-  return { stdout: output.join("\n"), stderr: errorOutput.join("\n") };
-}
 const jsExecutor = tool(
   async ({ code }) => {
-    console.log('Running js code:', code);
-    const result = await eval(code);
+    console.log("Running js code:", code);
+    const response = await fetch(process.env.EXECUTOR_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code }),
+    });
+    const { result } = await response.json();
+    console.log(result);
     return result;
   },
   {
-    name: 'run_javascript_code_tool',
+    name: "run_javascript_code_tool",
     description: `
       Run general purpose javascript code. 
       This can be used to access Internet or do any computation that you need. 
@@ -43,7 +29,7 @@ const jsExecutor = tool(
       WEATHER_API_KEY: process.env.OPEN_WEATHER_API_KEY
     `,
     schema: z.object({
-      code: z.string().describe('code to be executed'),
+      code: z.string().describe("code to be executed"),
     }),
   }
 );
