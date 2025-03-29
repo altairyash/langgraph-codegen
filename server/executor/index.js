@@ -1,16 +1,20 @@
 import express from "express";
 import cors from "cors";
-
+import dotenv from "dotenv";
+dotenv.config();
 const app = express();
 const port = 3003;
 
+
 const evalAndCapture = async (code) => {
   try {
-    const result = await eval(code);
-    console.log("code executed");
+    const wrappedCode = `(async () => { return ${code}; })()`; // Ensure it explicitly returns
+    const result = await eval(wrappedCode);
+    
+    console.log("Code executed, result:", result);
     return {
       success: true,
-      result,
+      result, // Capture and return the result
       error: null,
     };
   } catch (error) {
@@ -21,7 +25,6 @@ const evalAndCapture = async (code) => {
     };
   }
 };
-
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
